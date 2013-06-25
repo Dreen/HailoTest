@@ -66,4 +66,22 @@ class PathPoint extends Point
 	}
 }
 
+/*
+ * An utility to validate the point data
+ */
+class PathValidator
+{
+	public $points = array();
+
+	// accepts data in csv line string array format (eg. from file('data.csv'))
+	function __construct($pathData)
+	{
+		$len = count($pathData);
+		for ($i=0; $i<$len; $i++)
+		{
+			array_push($points, new Point($pathData));
+		}
+	}
+}
+
 ?>
