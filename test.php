@@ -25,17 +25,17 @@ class Point
 		return $numStr+0;
 	}
 
-	public getLong()
+	public function getLong()
 	{
 		return $this->long;
 	}
 
-	public getLat()
+	public function getLat()
 	{
 		return $this->lat;
 	}
 
-	public getTime()
+	public function getTime()
 	{
 		return $this->t;
 	}
@@ -79,7 +79,7 @@ class PathValidator
 		$len = count($pathData);
 		for ($i=0; $i<$len; $i++)
 		{
-			array_push($points, new Point($pathData));
+			array_push($this->points, new Point(explode(',',$pathData[$i])));
 		}
 	}
 }
