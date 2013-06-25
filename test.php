@@ -21,6 +21,21 @@ class Point
 	{
 		return $numStr+0;
 	}
+
+	public getLong()
+	{
+		return $this->long;
+	}
+
+	public getLat()
+	{
+		return $this->lat;
+	}
+
+	public getTime()
+	{
+		return $this->t;
+	}
 }
 
 ?>
