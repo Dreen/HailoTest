@@ -192,11 +192,25 @@ class PathValidator
 			$point = $point->next;
 		}
 	}
+
+	public function countPoints()
+	{
+		$point = $this->firstPoint;
+		$count = 1;
+		while ($point->next)
+		{
+			$count++;
+			$point = $point->next;
+		}
+		printf("\nThere are %d points in the path\n", $count);
+	}
 }
 
 // these parameters should work well for a car jorney in the city
 // for country drive, train, airplane etc different parameters can be used
 $v = new PathValidator(0.001, 0.005);
 $v->load(file('points.csv'));
+$v->countPoints();
 $v->killInvalids();
+$v->countPoints();
 ?>
