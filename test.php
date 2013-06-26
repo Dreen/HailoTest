@@ -19,7 +19,9 @@ class Point
 		return sprintf('at %d: (%.5f,%.5f)', $this->getTime(), $this->getLat(), $this->getLong());
 	}
 
-	// a hack to convert either to float or int
+	/*
+	 * a hack to convert either to float or int
+	 */
 	private function _cast($numStr)
 	{
 		return $numStr+0;
@@ -50,6 +52,10 @@ class PathPoint extends Point
 	private $changeLong;
 	private $prev;
 	private $next;
+	private $deviation = array(
+		'lat' => false,
+		'long' => false
+	);
 
 	function __construct($lineData, $prev=NULL)
 	{
@@ -66,7 +72,20 @@ class PathPoint extends Point
 
 	public function toString()
 	{
-		return parent::toString() . sprintf(' change: (%.3f,%.3f)', $this->getChangeLat(), $this->getChangeLong());
+		return parent::toString() . sprintf(' change: (%.3f,%.3f) %s', $this->getChangeLat(), $this->getChangeLong(),
+			($this->deviation['lat'] || $this->deviation['long']) ? ' Deviant!' : '');
+	}
+
+	/*
+	 * calculates information about deviations.
+	 */
+	public function testDeviation($margin)
+	{
+		if ($this->prev)
+			$this->deviation = array(
+				'lat' => abs($this->getChangeLat()) >= $margin,
+				'long' => abs($this->getChangeLong()) >= $margin
+			);
 	}
 
 	public function setNext($next)
@@ -92,18 +111,24 @@ class PathValidator
 {
 	public $points = array();
 
-	private $deviations;
+	private $deviation;
 
-	// accepts an array or deviation levels used for error checking
-	function __construct($deviations)
+	/*
+	 * accepts deviation margin used for error checking
+	 */
+	function __construct($deviation)
 	{
-		$this->deviations = $deviations;
+		$this->deviation = $deviation;
 	}
 
-	// accepts data in csv line string array format (eg. from file('data.csv'))
+	/*
+	 * accepts data in csv line string array format (eg. from file('data.csv'))
+	 */
 	public function load($pathData)
 	{
 		$len = count($pathData);
+		printf("Loading %d points...\n", $len);
+
 		for ($i=0; $i<$len; $i++)
 		{
 			if ($i===0)
@@ -114,14 +139,16 @@ class PathValidator
 			{
 				$this->points[$i] = new PathPoint(explode(',',$pathData[$i]), $this->points[$i - 1]);
 				$this->points[$i -1]->setNext($this->points[$i]);
+
+				$this->points[$i]->testDeviation($this->deviation);
 			}
+
+			printf("%d %s \n", $i, $this->points[$i]->toString());
 		}
 	}
 }
 
-$v = new PathValidator(array(0.001, 0.005, 0.01));
+//$v = new PathValidator(array(0.001, 0.005, 0.01));
+$v = new PathValidator(0.01);
 $v->load(file('points.csv'));
-echo $v->points[0]->toString(). "\n";
-echo $v->points[10]->toString(). "\n";
-echo $v->points[226]->toString(). "\n";
 ?>
