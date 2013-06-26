@@ -1,0 +1,17 @@
+
+Loading 227 points...
+
+There are 227 points in the path
+
+Removing invalid points...
+Point at 1326379271: (-0.17561,51.51139) change: (-0.022,0.013) is invalid!
+Point at 1326379365: (-0.17449,51.51152) change: (-0.024,0.011) is invalid!
+Point at 1326379585: (-0.17295,51.51131) change: (-0.016,0.001) is invalid!
+Point at 1326380144: (-0.18110,51.52829) change: (-0.031,0.005) is invalid!
+Point at 1326380159: (-0.14638,51.52381) change: (0.004,0.000) is invalid!
+Point at 1326380169: (-0.14917,51.51037) change: (0.001,-0.013) is invalid!
+Point at 1326380272: (-0.13131,51.52719) change: (0.004,0.001) is invalid!
+Point at 1326380277: (-0.13411,51.52604) change: (0.001,0.000) is invalid!
+Point at 1326380295: (-0.12767,51.52466) change: (0.007,-0.001) is invalid!
+
+There are 218 points in the path
