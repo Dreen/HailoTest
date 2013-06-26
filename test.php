@@ -54,7 +54,7 @@ class PathPoint extends Point
 	function __construct($lineData, $prev=NULL)
 	{
 		parent::__construct($lineData);
-		
+
 		if ($prev)
 		{
 			// calculate change in location in relation to the previous point
@@ -83,9 +83,15 @@ class PathValidator
 		$len = count($pathData);
 		for ($i=0; $i<$len; $i++)
 		{
-			$this->points[$i] = new PathPoint(
-				explode(',',$pathData[$i]),
-				($i!==0) ? $this->points[$i - 1] : NULL);
+			if ($i===0)
+			{
+				$this->points[$i] = new PathPoint(explode(',',$pathData[$i]));
+			}
+			else
+			{
+				$this->points[$i] = new PathPoint(explode(',',$pathData[$i]), $this->points[$i - 1]);
+				$this->points[$i -1]->setNext($this->points[$i]);
+			}
 		}
 	}
 }
@@ -93,4 +99,5 @@ class PathValidator
 $v = new PathValidator(file('points.csv'));
 $v->points[0]->toString();
 $v->points[10]->toString();
+$v->points[226]->toString();
 ?>
