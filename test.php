@@ -77,8 +77,16 @@ class PathValidator
 {
 	public $points = array();
 
+	private $deviations;
+
+	// accepts an array or deviation levels used for error checking
+	function __construct($deviations)
+	{
+		$this->deviations = $deviations;
+	}
+
 	// accepts data in csv line string array format (eg. from file('data.csv'))
-	function __construct($pathData)
+	public function load($pathData)
 	{
 		$len = count($pathData);
 		for ($i=0; $i<$len; $i++)
@@ -96,7 +104,8 @@ class PathValidator
 	}
 }
 
-$v = new PathValidator(file('points.csv'));
+$v = new PathValidator(array(0.001, 0.005, 0.01));
+$v->load(file('points.csv'));
 $v->points[0]->toString();
 $v->points[10]->toString();
 $v->points[226]->toString();
