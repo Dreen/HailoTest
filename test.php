@@ -62,14 +62,7 @@ class PathPoint extends Point
 	function __construct($lineData, $prev=NULL)
 	{
 		parent::__construct($lineData);
-
-		if ($prev)
-		{
-			// calculate change in location in relation to the previous point
-			$this->changeLat = $this->getLat() - $prev->getLat();
-			$this->changeLong = $this->getLong() - $prev->getLong();
-			$this->prev = $prev;
-		}
+		$this->setPrev($prev);
 	}
 
 	public function toString()
@@ -92,6 +85,18 @@ class PathPoint extends Point
 		}
 		else
 			return false;
+	}
+
+	public function setPrev($prev)
+	{
+		if ($prev)
+		{
+			$this->prev = $prev;
+
+			// calculate change in location in relation to the previous point
+			$this->changeLat = $this->getLat() - $this->prev->getLat();
+			$this->changeLong = $this->getLong() - $this->prev->getLong();
+		}
 	}
 
 	public function setNext($next)
@@ -120,23 +125,19 @@ class PathPoint extends Point
  */
 class PathValidator
 {
-	public $points = array();
-
+	private $firstPoint;
 	private $dAnd;
 	private $dOr;
-	private $minDelta;
 
 	/*
 	 * accepts deviation margins used for error checking.
 	 * $dAnd - if both long and lat change absolute exceed this then the point is deviant
 	 * $dOr - if either long or lat change absolute exceed this then the point is deviant
-	 * $minDelta - when testing for invalid points, use this delta to determine it "comes back" to the path
 	 */
-	function __construct($dAnd, $dOr, $minDelta)
+	function __construct($dAnd, $dOr)
 	{
 		$this->dAnd = $dAnd;
 		$this->dOr = $dOr;
-		$this->minDelta = $minDelta;
 	}
 
 	/*
@@ -145,56 +146,57 @@ class PathValidator
 	public function load($pathData, $verbose=false)
 	{
 		$len = count($pathData);
+		$points = array();
 		printf("\nLoading %d points...\n", $len);
 
 		for ($i=0; $i<$len; $i++)
 		{
 			if ($i===0)
 			{
-				$this->points[$i] = new PathPoint(explode(',',$pathData[$i]));
+				$points[$i] = new PathPoint(explode(',',$pathData[$i]));
+				$this->firstPoint = $points[$i];
 			}
 			else
 			{
-				$this->points[$i] = new PathPoint(explode(',',$pathData[$i]), $this->points[$i - 1]);
-				$this->points[$i -1]->setNext($this->points[$i]);
+				$points[$i] = new PathPoint(explode(',',$pathData[$i]), $points[$i - 1]);
+				$points[$i -1]->setNext($points[$i]);
 
 				// only test for And deviation if Or fails
-				if (!$this->points[$i]->testDeviation($this->dOr))
-					$this->points[$i]->testDeviation($this->dAnd, 'and');
+				if (!$points[$i]->testDeviation($this->dOr))
+					$points[$i]->testDeviation($this->dAnd, 'and');
 			}
 
 			if ($verbose)
-				printf("#%d %s %s\n", $i, $this->points[$i]->toString(), ($this->points[$i]->isDeviant()) ? ' Deviant!' : '');
+				printf("#%d %s %s\n", $i, $points[$i]->toString(), ($points[$i]->isDeviant()) ? ' Deviant!' : '');
 		}
 	}
 
 	/*
-	 * returns an array of points that are considered invalid, optionally remove them by default
+	 * removes points that are considered invalid
 	 */
-	public function printInvalids($remove=true)
+	public function killInvalids()
 	{
-		$len = count($this->points);
-		printf("\nListing invalid points%s...\n", $remove ? ' (and removing them from the dataset)' : '');
+		printf("\nRemoving invalid points...\n");
+		$point = $this->firstPoint;
 
-		for ($i=0; $i<$len; $i++)
+		while ($point->next)
 		{
-			// no point in testing the first and last point
-			if ($this->points[$i]->next && $this->points[$i]->prev)
+			if ($point->prev && $point->isDeviant() && $point->next->isDeviant())
 			{
-				if ($this->points[$i]->isDeviant() && $this->points[$i]->next->isDeviant())
-					//abs(abs($this->points[$i]->getChangeLat()) - abs($this->points[$i]->getChangeLong())) <= $this->minDelta)
-				{
+				printf("Point %s is invalid!\n", $point->toString());
 
-					printf("Point #%d %s is invalid!\n", $i, $this->points[$i]->toString());
-				}
+				// remove the point from the path
+				$point->prev->setNext($point->next);
+				$point->next->setPrev($point->prev);
 			}
+			$point = $point->next;
 		}
 	}
 }
 
 // these parameters should work well for a car jorney in the city
 // for country drive, train, airplane etc different parameters can be used
-$v = new PathValidator(0.001, 0.005, 0.001);
+$v = new PathValidator(0.001, 0.005);
 $v->load(file('points.csv'));
-$v->printInvalids();
+$v->killInvalids();
 ?>
