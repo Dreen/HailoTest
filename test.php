@@ -51,13 +51,17 @@ class PathPoint extends Point
 	private $prev;
 	private $next;
 
-	function __construct($lineData, $prev)
+	function __construct($lineData, $prev=NULL)
 	{
 		parent::__construct($lineData);
-
-		// calculate change in location in relation to the previous point
-		$this->changeLat = $this->getLat() - $prev->getLat();
-		$this->changeLong = $this->getLong() - $prev->getLong();
+		
+		if ($prev)
+		{
+			// calculate change in location in relation to the previous point
+			$this->changeLat = $this->getLat() - $prev->getLat();
+			$this->changeLong = $this->getLong() - $prev->getLong();
+			$this->prev = $prev;
+		}
 	}
 
 	public function setNext($next)
@@ -79,9 +83,14 @@ class PathValidator
 		$len = count($pathData);
 		for ($i=0; $i<$len; $i++)
 		{
-			array_push($this->points, new Point(explode(',',$pathData[$i])));
+			$this->points[$i] = new PathPoint(
+				explode(',',$pathData[$i]),
+				($i!==0) ? $this->points[$i - 1] : NULL);
 		}
 	}
 }
 
+$v = new PathValidator(file('points.csv'));
+$v->points[0]->toString();
+$v->points[10]->toString();
 ?>
