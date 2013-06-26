@@ -16,7 +16,7 @@ class Point
 
 	public function toString()
 	{
-		var_dump($this);
+		return sprintf('at %d: (%.5f,%.5f)', $this->getTime(), $this->getLat(), $this->getLong());
 	}
 
 	// a hack to convert either to float or int
@@ -64,9 +64,24 @@ class PathPoint extends Point
 		}
 	}
 
+	public function toString()
+	{
+		return parent::toString() . sprintf(' change: (%.3f,%.3f)', $this->getChangeLat(), $this->getChangeLong());
+	}
+
 	public function setNext($next)
 	{
 		$this->next = $next;
+	}
+
+	public function getChangeLong()
+	{
+		return $this->changeLong;
+	}
+
+	public function getChangeLat()
+	{
+		return $this->changeLat;
 	}
 }
 
@@ -106,7 +121,7 @@ class PathValidator
 
 $v = new PathValidator(array(0.001, 0.005, 0.01));
 $v->load(file('points.csv'));
-$v->points[0]->toString();
-$v->points[10]->toString();
-$v->points[226]->toString();
+echo $v->points[0]->toString(). "\n";
+echo $v->points[10]->toString(). "\n";
+echo $v->points[226]->toString(). "\n";
 ?>
