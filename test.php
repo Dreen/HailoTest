@@ -48,10 +48,15 @@ class Point
  */
 class PathPoint extends Point
 {
+	public $prev;
+	public $next;
+
 	private $changeLat;
 	private $changeLong;
-	private $prev;
-	private $next;
+
+	/*
+	 * A deviant point may be invalid because it differs in some significant way from its neighbors
+	 */
 	private $deviant = false;
 
 	function __construct($lineData, $prev=NULL)
@@ -69,12 +74,11 @@ class PathPoint extends Point
 
 	public function toString()
 	{
-		return parent::toString() . sprintf(' change: (%.3f,%.3f) %s', $this->getChangeLat(), $this->getChangeLong(),
-			($this->deviant) ? ' Deviant!' : '');
+		return parent::toString() . sprintf(' change: (%.3f,%.3f)', $this->getChangeLat(), $this->getChangeLong());
 	}
 
 	/*
-	 * calculates information about deviations.
+	 * detects potentially invalid points by marking them deviant
 	 */
 	public function testDeviation($margin, $mode='or')
 	{
@@ -104,6 +108,11 @@ class PathPoint extends Point
 	{
 		return $this->changeLat;
 	}
+
+	public function isDeviant()
+	{
+		return $this->deviant;
+	}
 }
 
 /*
@@ -115,25 +124,28 @@ class PathValidator
 
 	private $dAnd;
 	private $dOr;
+	private $minDelta;
 
 	/*
 	 * accepts deviation margins used for error checking.
 	 * $dAnd - if both long and lat change absolute exceed this then the point is deviant
 	 * $dOr - if either long or lat change absolute exceed this then the point is deviant
+	 * $minDelta - when testing for invalid points, use this delta to determine it "comes back" to the path
 	 */
-	function __construct($dAnd, $dOr)
+	function __construct($dAnd, $dOr, $minDelta)
 	{
 		$this->dAnd = $dAnd;
 		$this->dOr = $dOr;
+		$this->minDelta = $minDelta;
 	}
 
 	/*
-	 * accepts data in csv line string array format (eg. from file('data.csv'))
+	 * accepts data in csv line string array format (eg. from file('data.csv')), optionally print information about the points
 	 */
-	public function load($pathData)
+	public function load($pathData, $verbose=false)
 	{
 		$len = count($pathData);
-		printf("Loading %d points...\n", $len);
+		printf("\nLoading %d points...\n", $len);
 
 		for ($i=0; $i<$len; $i++)
 		{
@@ -151,12 +163,38 @@ class PathValidator
 					$this->points[$i]->testDeviation($this->dAnd, 'and');
 			}
 
-			printf("%d %s \n", $i, $this->points[$i]->toString());
+			if ($verbose)
+				printf("#%d %s %s\n", $i, $this->points[$i]->toString(), ($this->points[$i]->isDeviant()) ? ' Deviant!' : '');
+		}
+	}
+
+	/*
+	 * returns an array of points that are considered invalid, optionally remove them by default
+	 */
+	public function printInvalids($remove=true)
+	{
+		$len = count($this->points);
+		printf("\nListing invalid points%s...\n", $remove ? ' (and removing them from the dataset)' : '');
+
+		for ($i=0; $i<$len; $i++)
+		{
+			// no point in testing the first and last point
+			if ($this->points[$i]->next && $this->points[$i]->prev)
+			{
+				if ($this->points[$i]->isDeviant() && $this->points[$i]->next->isDeviant())
+					//abs(abs($this->points[$i]->getChangeLat()) - abs($this->points[$i]->getChangeLong())) <= $this->minDelta)
+				{
+
+					printf("Point #%d %s is invalid!\n", $i, $this->points[$i]->toString());
+				}
+			}
 		}
 	}
 }
 
-//$v = new PathValidator(array(0.001, 0.005, 0.01));
-$v = new PathValidator(0.001, 0.005);
+// these parameters should work well for a car jorney in the city
+// for country drive, train, airplane etc different parameters can be used
+$v = new PathValidator(0.001, 0.005, 0.001);
 $v->load(file('points.csv'));
+$v->printInvalids();
 ?>
