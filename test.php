@@ -52,10 +52,7 @@ class PathPoint extends Point
 	private $changeLong;
 	private $prev;
 	private $next;
-	private $deviation = array(
-		'lat' => false,
-		'long' => false
-	);
+	private $deviant = false;
 
 	function __construct($lineData, $prev=NULL)
 	{
@@ -73,19 +70,24 @@ class PathPoint extends Point
 	public function toString()
 	{
 		return parent::toString() . sprintf(' change: (%.3f,%.3f) %s', $this->getChangeLat(), $this->getChangeLong(),
-			($this->deviation['lat'] || $this->deviation['long']) ? ' Deviant!' : '');
+			($this->deviant) ? ' Deviant!' : '');
 	}
 
 	/*
 	 * calculates information about deviations.
 	 */
-	public function testDeviation($margin)
+	public function testDeviation($margin, $mode='or')
 	{
 		if ($this->prev)
-			$this->deviation = array(
-				'lat' => abs($this->getChangeLat()) >= $margin,
-				'long' => abs($this->getChangeLong()) >= $margin
-			);
+		{
+			if ($mode == 'or')
+				$this->deviant = abs($this->getChangeLat()) >= $margin || abs($this->getChangeLong()) >= $margin;
+			else
+				$this->deviant = abs($this->getChangeLat()) >= $margin && abs($this->getChangeLong()) >= $margin;
+			return $this->deviant;
+		}
+		else
+			return false;
 	}
 
 	public function setNext($next)
@@ -111,14 +113,18 @@ class PathValidator
 {
 	public $points = array();
 
-	private $deviation;
+	private $dAnd;
+	private $dOr;
 
 	/*
-	 * accepts deviation margin used for error checking
+	 * accepts deviation margins used for error checking.
+	 * $dAnd - if both long and lat change absolute exceed this then the point is deviant
+	 * $dOr - if either long or lat change absolute exceed this then the point is deviant
 	 */
-	function __construct($deviation)
+	function __construct($dAnd, $dOr)
 	{
-		$this->deviation = $deviation;
+		$this->dAnd = $dAnd;
+		$this->dOr = $dOr;
 	}
 
 	/*
@@ -140,7 +146,9 @@ class PathValidator
 				$this->points[$i] = new PathPoint(explode(',',$pathData[$i]), $this->points[$i - 1]);
 				$this->points[$i -1]->setNext($this->points[$i]);
 
-				$this->points[$i]->testDeviation($this->deviation);
+				// only test for And deviation if Or fails
+				if (!$this->points[$i]->testDeviation($this->dOr))
+					$this->points[$i]->testDeviation($this->dAnd, 'and');
 			}
 
 			printf("%d %s \n", $i, $this->points[$i]->toString());
@@ -149,6 +157,6 @@ class PathValidator
 }
 
 //$v = new PathValidator(array(0.001, 0.005, 0.01));
-$v = new PathValidator(0.01);
+$v = new PathValidator(0.001, 0.005);
 $v->load(file('points.csv'));
 ?>
